@@ -11,20 +11,22 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.GenericApplicationContext;
 
 
-public class JavaFxApplication extends Application {
+public class JavaFxApplication extends Application
+{
 
     private ConfigurableApplicationContext context;
 
 
-
     @Override
-    public void init() {
+    public void init()
+    {
 
-        ApplicationContextInitializer<GenericApplicationContext> initializer = applicationContext -> {
-                applicationContext.registerBean(Application.class, () -> JavaFxApplication.this);
-                applicationContext.registerBean(Parameters.class, this::getParameters);
-                applicationContext.registerBean(HostServices.class, this::getHostServices);
-            };
+        ApplicationContextInitializer<GenericApplicationContext> initializer = applicationContext ->
+        {
+            applicationContext.registerBean(Application.class, () -> JavaFxApplication.this);
+            applicationContext.registerBean(Parameters.class, this::getParameters);
+            applicationContext.registerBean(HostServices.class, this::getHostServices);
+        };
 
         this.context = new SpringApplicationBuilder()
                 .sources(DesktopApplication.class)
@@ -33,23 +35,29 @@ public class JavaFxApplication extends Application {
     }
 
     @Override
-    public void start(Stage primaryStage) {
-        this.context.publishEvent( new StageReadyEvent(primaryStage));
+    public void start(Stage primaryStage)
+    {
+        this.context.publishEvent(new StageReadyEvent(primaryStage));
     }
 
     @Override
-    public void stop() {
+    public void stop()
+    {
         this.context.close();
         Platform.exit();
     }
 
 }
 
-class   StageReadyEvent extends ApplicationEvent{
-    public Stage getStage(){
-        return Stage.class.cast(getSource());
+class StageReadyEvent extends ApplicationEvent
+{
+    public Stage getStage()
+    {
+        return (Stage) getSource();
     }
-    public StageReadyEvent(Stage source){
+
+    public StageReadyEvent(Stage source)
+    {
         super(source);
     }
 }
