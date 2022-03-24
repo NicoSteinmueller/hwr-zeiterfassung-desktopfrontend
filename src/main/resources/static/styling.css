@@ -1,0 +1,72 @@
+BorderPane{
+    -fx-padding: 10px 20px 20px 20px;
+    -fx-background-color:  #0D2253;
+}
+
+Button{
+    -fx-border-radius: 5px;
+    -fx-min-width: 120px;
+    -fx-text-fill: white;
+}
+
+Button:hover{
+    -fx-cursor: hand;
+}
+
+VBox, HBox{
+    -fx-spacing: 5px;
+}
+
+Label{
+    -fx-text-fill: white;
+}
+
+TextField, PasswordField{
+    -fx-border-width: 0px 0px 1px 0px;
+    -fx-border-color: white;
+    -fx-background-color: transparent;
+    -fx-text-fill: white;
+}
+
+.blueButton{
+    -fx-background-color: #709BE7;
+    -fx-border-color: #709BE7;
+}
+
+.blueButton:disabled{
+    -fx-background-color: #BFC4CE;
+    -fx-border-color: #BFC4CE;
+
+}
+
+.redButton{
+    -fx-background-color: #F92247;
+    -fx-border-color: #F92247;
+}
+
+.redButton:disabled{
+    -fx-background-color: #BFC4CE;
+    -fx-border-color: #BFC4CE;
+}
+
+.redAlternativeButton{
+    -fx-border-radius: 5px;
+    -fx-border-width: 2px;
+    -fx-min-width: 120px;
+    -fx-background-color: white;
+    -fx-background-radius: 7px;
+    -fx-border-color: #F92247;
+}
+
+.redAlternativeButton .label{
+    -fx-text-fill: #F92247;
+}
+
+.menu-item .label{
+    -fx-text-fill: black;
+}
+
+
+
+
+
