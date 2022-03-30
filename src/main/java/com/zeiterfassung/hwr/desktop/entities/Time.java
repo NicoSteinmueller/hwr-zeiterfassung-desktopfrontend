@@ -9,6 +9,5 @@ public class Time
         private DateTime start;
         private DateTime end;
         private boolean isBreak;
-        private String note;
         private Project project;
 }
