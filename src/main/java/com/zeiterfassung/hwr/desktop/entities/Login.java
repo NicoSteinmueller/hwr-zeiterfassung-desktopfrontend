@@ -7,8 +7,6 @@ import org.springframework.stereotype.Component;
 @Data
 public class Login implements ILogin
 {
-
     private String email;
     private String password;
-
 }

@@ -28,6 +28,10 @@ TextField, PasswordField{
     -fx-text-fill: white;
 }
 
+.errorLabel{
+    -fx-font-style: bold;
+}
+
 .blueButton{
     -fx-background-color: #709BE7;
     -fx-border-color: #709BE7;
