@@ -29,7 +29,7 @@ TextField, PasswordField{
 }
 
 .errorLabel{
-    -fx-font-style: bold;
+    -fx-font-weight: bold;
 }
 
 .blueButton{
