@@ -16,6 +16,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -29,6 +30,7 @@ import java.nio.charset.StandardCharsets;
 public class LoginPane implements IUILayout
 {
 
+    private final String LOGINAPI;
     @Autowired
     private ButtonPane nextPane;
     @Autowired
@@ -39,6 +41,11 @@ public class LoginPane implements IUILayout
     private PasswordField passwordField;
     private Button btnSubmit;
     private Label errorLabel;
+
+    public LoginPane(@Value("${spring.application.api.login}") String loginApi)
+    {
+        this.LOGINAPI = loginApi;
+    }
 
     @Override
     public Parent getParent()
@@ -64,7 +71,7 @@ public class LoginPane implements IUILayout
             login.setEmail(textFieldEmail.getText());
             login.setPassword(hash(passwordField.getText()));
 
-            WebClient.create("http://localhost:8080/login")
+            WebClient.create(LOGINAPI)
                     .post()
                     .uri(uriBuilder -> uriBuilder.path("/basicLogin")
                             .queryParam("email", login.getEmail())
@@ -89,10 +96,7 @@ public class LoginPane implements IUILayout
                     })
                     .onStatus(HttpStatus::isError, response ->
                     {
-                        Platform.runLater(() ->
-                        {
-                            errorLabel.setVisible(true);
-                        });
+                        Platform.runLater(() -> errorLabel.setVisible(true));
                         return Mono.empty();
                     })
                     .bodyToMono(HttpStatus.class)
