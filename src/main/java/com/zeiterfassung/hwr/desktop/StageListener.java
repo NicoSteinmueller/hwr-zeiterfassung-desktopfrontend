@@ -18,15 +18,16 @@ public class StageListener implements ApplicationListener<StageReadyEvent>
 
     private final String TITLE;
     private final ClassPathResource CSS;
-    @Autowired
-    @Qualifier("Login")
     private LoginPane pane;
 
+
     public StageListener(@Value("${spring.application.window.title}") String applicationTitle,
-                         @Value("static/styling.css") ClassPathResource classPathResource)
+                         @Value("static/styling.css") ClassPathResource classPathResource,
+                         LoginPane loginPane)
     {
         this.TITLE = applicationTitle;
         this.CSS = classPathResource;
+        this.pane = loginPane;
     }
 
     @Override
