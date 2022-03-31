@@ -1,22 +1,16 @@
 package com.zeiterfassung.hwr.desktop.component;
 
 import com.zeiterfassung.hwr.desktop.entities.Human;
-import com.zeiterfassung.hwr.desktop.entities.Project;
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableArray;
 import javafx.scene.Parent;
 import javafx.scene.control.*;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
-import javafx.scene.control.MenuItem;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
-
-import java.awt.*;
-
 
 @Component
 @Qualifier("nextPane")
