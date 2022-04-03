@@ -5,8 +5,6 @@ import com.zeiterfassung.hwr.desktop.component.LoginPane;
 import com.zeiterfassung.hwr.desktop.controller.LoginController;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationListener;
 import org.springframework.core.io.ClassPathResource;
