@@ -39,7 +39,7 @@ tools {
 
         stage('test Project') {
             steps {
-                sh "mvn test"
+//                 sh "mvn test"
             }
         }
 
