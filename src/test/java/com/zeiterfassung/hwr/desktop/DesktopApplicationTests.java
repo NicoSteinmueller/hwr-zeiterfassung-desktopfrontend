@@ -9,15 +9,15 @@ import org.testfx.framework.junit5.Start;
 
 
 @SpringBootTest
-@ExtendWith(ApplicationExtension.class)
+//@ExtendWith(ApplicationExtension.class)
 class DesktopApplicationTests
 {
 
 
-    @Start
-    private void start(Stage stage)
-    {
-    }
+//    @Start
+//    private void start(Stage stage)
+//    {
+//    }
 
     @Test
     void contextLoads()

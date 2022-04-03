@@ -39,8 +39,7 @@ tools {
 
         stage('test Project') {
             steps {
-                echo "test"
-//                 sh "mvn test"
+                sh "mvn test"
             }
         }
 
