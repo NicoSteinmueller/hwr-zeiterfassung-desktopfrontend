@@ -39,7 +39,10 @@ public class LoginController
         this.loginPane = loginPane;
         this.nextPane = buttonPane;
         this.model = login;
-        this.loginPane.getBtnSubmit().setOnAction(submitEventHandler);
+    }
+
+    public void setController(){
+        loginPane.getBtnSubmit().setOnAction(submitEventHandler);
     }
 
     private EventHandler<ActionEvent> submitEventHandler = btnClick ->
