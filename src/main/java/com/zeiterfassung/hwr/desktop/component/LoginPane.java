@@ -22,6 +22,7 @@ import org.springframework.stereotype.Component;
 public class LoginPane implements IUILayout
 {
     private BorderPane borderPane;
+    private final String imageUrl;
     private Image logo;
     private VBox vBox;
     private TextField textFieldEmail;
@@ -31,13 +32,19 @@ public class LoginPane implements IUILayout
 
     public LoginPane(@Value("static/logo.png") String imageUrl)
     {
-        this.logo = new Image(imageUrl, 150, 150, true, false);
-        this.textFieldEmail = new TextField();
-        this.passwordField = new PasswordField();
-        this.btnSubmit = new Button("Submit");
-        this.errorLabel = new Label("Fehler");
-        this.vBox = new VBox(5, textFieldEmail, passwordField, btnSubmit, errorLabel);
-        this.borderPane = new BorderPane();
+        this.imageUrl = imageUrl;
+    }
+
+    @Override
+    public Parent getParent()
+    {
+        logo = new Image(imageUrl, 150, 150, true, false);
+        textFieldEmail = new TextField();
+        passwordField = new PasswordField();
+        btnSubmit = new Button("Submit");
+        errorLabel = new Label("Fehler");
+        vBox = new VBox(5, textFieldEmail, passwordField, btnSubmit, errorLabel);
+        borderPane = new BorderPane();
         textFieldEmail.setPromptText("Email");
         passwordField.setPromptText("Password");
         errorLabel.setVisible(false);
@@ -46,11 +53,6 @@ public class LoginPane implements IUILayout
 
         btnSubmit.getStyleClass().add("redButton");
         errorLabel.getStyleClass().add("errorLabel");
-    }
-
-    @Override
-    public Parent getParent()
-    {
         return borderPane;
     }
 
