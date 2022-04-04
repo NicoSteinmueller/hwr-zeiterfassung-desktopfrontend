@@ -1,6 +1,5 @@
 package com.zeiterfassung.hwr.desktop.component;
 
-import com.zeiterfassung.hwr.desktop.entities.Human;
 import com.zeiterfassung.hwr.desktop.entities.Login;
 import com.zeiterfassung.hwr.desktop.entities.Project;
 import javafx.collections.FXCollections;
@@ -13,10 +12,12 @@ import javafx.scene.layout.HBox;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.List;
+import java.util.Map;
 
 @Component
 @Qualifier("nextPane")
@@ -25,8 +26,6 @@ public class ButtonPane implements IUILayout
 
     @Autowired
     private Login model;
-    @Autowired
-    private Human user;
     private final String baseUrl;
     private BorderPane borderpane;
     private HBox hBox;
@@ -43,9 +42,10 @@ public class ButtonPane implements IUILayout
     @Override
     public Parent getParent()
     {
-        String greeting = "Hi " + user.getFirstName();
+        Map<String, String> user = fetchUserName();
+        String greeting = "Hi " + user.get("fistName") + " " + user.get("lastName");
 
-        //TODO mock entfernen
+
         List<String> projectNames = fetchProjects().stream()
                 .map(Project::getName)
                 .toList();
@@ -124,6 +124,19 @@ public class ButtonPane implements IUILayout
                 .retrieve()
                 .bodyToFlux(Project.class)
                 .collectList()
+                .block();
+    }
+
+    private Map<String, String> fetchUserName()
+    {
+        return WebClient.create(baseUrl)
+                .get()
+                .uri(uriBuilder -> uriBuilder.path("/name")
+                        .queryParam("email", model.getEmail())
+                        .queryParam("password", model.getPassword())
+                        .build())
+                .retrieve()
+                .bodyToMono(new ParameterizedTypeReference<Map<String, String>>() { })
                 .block();
     }
 }
