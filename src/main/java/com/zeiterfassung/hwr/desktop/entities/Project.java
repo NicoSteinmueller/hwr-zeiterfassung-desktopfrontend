@@ -1,8 +1,11 @@
 package com.zeiterfassung.hwr.desktop.entities;
 
-import javafx.collections.ObservableArray;
+import lombok.Getter;
 
+
+@Getter
 public class Project
 {
+        private int id;
         private String name;
 }

@@ -1,16 +1,22 @@
 package com.zeiterfassung.hwr.desktop.component;
 
 import com.zeiterfassung.hwr.desktop.entities.Human;
+import com.zeiterfassung.hwr.desktop.entities.Login;
+import com.zeiterfassung.hwr.desktop.entities.Project;
 import javafx.collections.FXCollections;
 import javafx.scene.Parent;
-import javafx.scene.control.*;
 import javafx.scene.control.Button;
+import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClient;
+
+import java.util.List;
 
 @Component
 @Qualifier("nextPane")
@@ -18,7 +24,10 @@ public class ButtonPane implements IUILayout
 {
 
     @Autowired
+    private Login model;
+    @Autowired
     private Human user;
+    private final String baseUrl;
     private BorderPane borderpane;
     private HBox hBox;
     private ChoiceBox<String> btnProject;
@@ -26,15 +35,26 @@ public class ButtonPane implements IUILayout
     private Button btnEnd;
     private Button btnBreak;
 
+    public ButtonPane(@Value("${spring.application.api.human}") String baseUrl)
+    {
+        this.baseUrl = baseUrl;
+    }
+
     @Override
     public Parent getParent()
     {
         String greeting = "Hi " + user.getFirstName();
 
         //TODO mock entfernen
-        btnProject = new ChoiceBox<>(FXCollections.observableArrayList(
-                "First", "Second", "Third"));
-        btnProject.setValue("First");
+        List<String> projectNames = fetchProjects().stream()
+                .map(Project::getName)
+                .toList();
+        btnProject = new ChoiceBox<>(FXCollections.observableArrayList(projectNames));
+        btnProject.setValue(
+                projectNames.stream()
+                        .findFirst()
+                        .orElse("Projekt")
+        );
 
         btnStart = new Button("Arbeit beginnen");
         btnEnd = new Button("Arbeit beenden");
@@ -54,7 +74,8 @@ public class ButtonPane implements IUILayout
         borderpane.setCenter(hBox);
 
 
-        btnProject.setOnAction(select ->{
+        btnProject.setOnAction(select ->
+        {
             btnStart.setText("Projekt wechseln");
             btnStart.setDisable(false);
         });
@@ -89,5 +110,20 @@ public class ButtonPane implements IUILayout
         });
 
         return borderpane;
+    }
+
+    private List<Project> fetchProjects()
+    {
+
+        return WebClient.create(baseUrl)
+                .get()
+                .uri(uriBuilder -> uriBuilder.path("/getAllProjects")
+                        .queryParam("email", model.getEmail())
+                        .queryParam("password", model.getPassword())
+                        .build())
+                .retrieve()
+                .bodyToFlux(Project.class)
+                .collectList()
+                .block();
     }
 }
