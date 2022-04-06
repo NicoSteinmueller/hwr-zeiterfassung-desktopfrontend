@@ -2,6 +2,7 @@ package com.zeiterfassung.hwr.desktop.component;
 
 import com.zeiterfassung.hwr.desktop.entities.Login;
 import com.zeiterfassung.hwr.desktop.entities.Project;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
@@ -13,11 +14,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 @Component
 @Qualifier("nextPane")
@@ -26,6 +31,7 @@ public class ButtonPane implements IUILayout
 
     @Autowired
     private Login model;
+    private Boolean isWork;
     private final String baseUrl;
     private BorderPane borderpane;
     private HBox hBox;
@@ -33,8 +39,9 @@ public class ButtonPane implements IUILayout
     private Button btnStart;
     private Button btnEnd;
     private Button btnBreak;
+    private Label errorLabel;
 
-    public ButtonPane(@Value("${spring.application.api.human}") String baseUrl)
+    public ButtonPane(@Value("${spring.application.api}") String baseUrl)
     {
         this.baseUrl = baseUrl;
     }
@@ -42,11 +49,12 @@ public class ButtonPane implements IUILayout
     @Override
     public Parent getParent()
     {
+        isWork = true;
         Map<String, String> user = fetchUserName();
         String greeting = "Hi " + user.get("fistName") + " " + user.get("lastName");
 
-
-        List<String> projectNames = fetchProjects().stream()
+        List<Project> projects = fetchProjects();
+        List<String> projectNames = projects.stream()
                 .map(Project::getName)
                 .toList();
         btnProject = new ChoiceBox<>(FXCollections.observableArrayList(projectNames));
@@ -64,6 +72,8 @@ public class ButtonPane implements IUILayout
         hBox = new HBox();
         hBox.getChildren().addAll(btnProject, btnStart, btnEnd, btnBreak);
 
+        errorLabel = new Label();
+
         btnProject.getStyleClass().add("redAlternativeButton");
         btnStart.getStyleClass().add("redButton");
         btnEnd.getStyleClass().add("redButton");
@@ -72,6 +82,7 @@ public class ButtonPane implements IUILayout
         borderpane = new BorderPane();
         borderpane.setTop(new Label(greeting));
         borderpane.setCenter(hBox);
+        borderpane.setBottom(errorLabel);
 
 
         btnProject.setOnAction(select ->
@@ -82,31 +93,65 @@ public class ButtonPane implements IUILayout
 
         btnStart.setOnAction(click ->
         {
-            btnStart.setText("Arbeit fortsetzen");
-            btnStart.setDisable(true);
-            btnEnd.setDisable(false);
-            btnBreak.setDisable(false);
+            int projectID = getProjectID(projects);
 
-            //TODO Day an Server schicken POST
+            if (!isWork)
+            {
+                postTime(false, true, projectID, clientResponse -> Mono.empty());
+            }
+
+            postTime(true, false, projectID
+                    , clientResponse ->
+                    {
+                        Platform.runLater(() ->
+                        {
+                            btnStart.setText("Arbeit fortsetzen");
+                            btnStart.setDisable(true);
+                            btnEnd.setDisable(false);
+                            btnBreak.setDisable(false);
+                        });
+
+                        return Mono.empty();
+                    });
         });
 
         btnEnd.setOnAction(click ->
         {
-            btnStart.setDisable(false);
-            btnEnd.setDisable(true);
-            btnBreak.setDisable(true);
 
-            //TODO Day an Server schicken PUT
+            int projectID = getProjectID(projects);
+
+            postTime(false, false, projectID
+                    , clientResponse ->
+                    {
+                        Platform.runLater(() ->
+                        {
+                            btnStart.setDisable(false);
+                            btnEnd.setDisable(true);
+                            btnBreak.setDisable(true);
+                        });
+
+                        return Mono.empty();
+                    });
 
         });
 
         btnBreak.setOnAction(click ->
         {
-            btnStart.setDisable(false);
-            btnEnd.setDisable(false);
-            btnBreak.setDisable(true);
+            int projectID = getProjectID(projects);
 
-            //TODO Day an Server schicken PUT
+            postTime(true, true, projectID
+                    , clientResponse ->
+                    {
+                        Platform.runLater(() ->
+                        {
+                            isWork = false;
+                            btnStart.setDisable(false);
+                            btnEnd.setDisable(false);
+                            btnBreak.setDisable(true);
+                        });
+
+                        return Mono.empty();
+                    });
         });
 
         return borderpane;
@@ -115,7 +160,7 @@ public class ButtonPane implements IUILayout
     private List<Project> fetchProjects()
     {
 
-        return WebClient.create(baseUrl)
+        return WebClient.create(baseUrl + "/human")
                 .get()
                 .uri(uriBuilder -> uriBuilder.path("/getAllProjects")
                         .queryParam("email", model.getEmail())
@@ -129,14 +174,55 @@ public class ButtonPane implements IUILayout
 
     private Map<String, String> fetchUserName()
     {
-        return WebClient.create(baseUrl)
+        return WebClient.create(baseUrl + "/human")
                 .get()
                 .uri(uriBuilder -> uriBuilder.path("/name")
                         .queryParam("email", model.getEmail())
                         .queryParam("password", model.getPassword())
                         .build())
                 .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<Map<String, String>>() { })
+                .bodyToMono(new ParameterizedTypeReference<Map<String, String>>()
+                {
+                })
                 .block();
+    }
+
+    private int getProjectID(List<Project> projects)
+    {
+        String selectedProjectName = btnProject.getValue();
+        return projects.stream()
+                .filter(project -> project.getName().equals(selectedProjectName))
+                .findFirst()
+                .map(Project::getId)
+                .orElseThrow();
+    }
+
+    private void postTime(Boolean isStart, Boolean isBreak, int projectID,
+                          Function<ClientResponse, Mono<? extends Throwable>> acceptedResponse)
+    {
+        WebClient.create(baseUrl + "/book")
+                .post()
+                .uri(uriBuilder -> uriBuilder.path("/time")
+                        .queryParam("email", model.getEmail())
+                        .queryParam("password", model.getPassword())
+                        .queryParam("isStart", isStart)
+                        .queryParam("pause", isBreak)
+                        .queryParam("note", "")
+                        .queryParam("projectId", projectID)
+                        .build())
+                .retrieve()
+                .onStatus(httpStatus -> httpStatus.equals(HttpStatus.ACCEPTED), acceptedResponse)
+                .onStatus(HttpStatus::isError, clientResponse ->
+                {
+                    Platform.runLater(() ->
+                    {
+                        String errorReason = clientResponse.statusCode().getReasonPhrase();
+                        errorLabel.setText("Error: " + errorReason);
+                    });
+                    return Mono.empty();
+                })
+                .toBodilessEntity()
+                .block();
+
     }
 }
