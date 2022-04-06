@@ -27,20 +27,27 @@ import java.util.function.Predicate;
 @Controller
 public class LoginController
 {
+    private final String BASEURL;
+    private Login model;
     private LoginPane loginPane;
     private ButtonPane nextPane;
-    private Login model;
-    private final String BASEURL;
+    private ButtonPaneController nextPaneController;
 
     public LoginController(@Value("${spring.application.api.baseUrl}") String baseUrl,
-                           LoginPane loginPane, ButtonPane buttonPane, Login login){
+                           Login login,
+                           LoginPane loginPane,
+                           ButtonPane buttonPane,
+                           ButtonPaneController buttonPaneController)
+    {
         this.BASEURL = baseUrl;
+        this.model = login;
         this.loginPane = loginPane;
         this.nextPane = buttonPane;
-        this.model = login;
+        this.nextPaneController = buttonPaneController;
     }
 
-    public void setController(){
+    public void setController()
+    {
         loginPane.getBtnSubmit().setOnAction(submitEventHandler);
     }
 
@@ -58,7 +65,7 @@ public class LoginController
 
     private void validateLoginAndProceed(ActionEvent btnClick)
     {
-        WebClient.create(BASEURL+"/login")
+        WebClient.create(BASEURL + "/login")
                 .post()
                 .uri(buildUri)
                 .bodyValue(model)
@@ -106,6 +113,7 @@ public class LoginController
             Scene scene = btn.getScene();
             Stage stage = (Stage) scene.getWindow();
             Scene nextScene = new Scene(nextPane.getParent());
+            nextPaneController.setController();
             nextScene.getStylesheets().add("static/styling.css");
             stage.setScene(nextScene);
 
