@@ -30,11 +30,11 @@ public class LoginController
     private LoginPane loginPane;
     private ButtonPane nextPane;
     private Login model;
-    private final String APIURL;
+    private final String BASEURL;
 
-    public LoginController(@Value("${spring.application.api.login}") String loginApi,
+    public LoginController(@Value("${spring.application.api.baseUrl}") String baseUrl,
                            LoginPane loginPane, ButtonPane buttonPane, Login login){
-        this.APIURL = loginApi;
+        this.BASEURL = baseUrl;
         this.loginPane = loginPane;
         this.nextPane = buttonPane;
         this.model = login;
@@ -58,7 +58,7 @@ public class LoginController
 
     private void validateLoginAndProceed(ActionEvent btnClick)
     {
-        WebClient.create(APIURL)
+        WebClient.create(BASEURL+"/login")
                 .post()
                 .uri(buildUri)
                 .bodyValue(model)
