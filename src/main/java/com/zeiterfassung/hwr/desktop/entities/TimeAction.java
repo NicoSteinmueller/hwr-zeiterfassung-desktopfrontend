@@ -3,9 +3,9 @@ package com.zeiterfassung.hwr.desktop.entities;
 import lombok.Data;
 
 @Data
-public class Time
+public class TimeAction
 {
     private boolean isStart;
     private boolean isBreak;
-    private int projectID;
+    private int projectId;
 }
