@@ -17,8 +17,10 @@ VBox, HBox{
     -fx-spacing: 5px;
 }
 
+
 Label{
     -fx-text-fill: white;
+    -fx-padding: 5px;
 }
 
 TextField, PasswordField{

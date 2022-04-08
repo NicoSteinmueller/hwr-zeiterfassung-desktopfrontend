@@ -1,5 +1,6 @@
 package com.zeiterfassung.hwr.desktop;
 
+import com.zeiterfassung.hwr.desktop.javafxEntrypoint.JavaFxApplication;
 import javafx.application.Application;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 

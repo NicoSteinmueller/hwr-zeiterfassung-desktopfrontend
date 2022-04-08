@@ -1,101 +1,147 @@
 package com.zeiterfassung.hwr.desktop.controller;
 
-import com.zeiterfassung.hwr.desktop.component.ButtonPane;
-import com.zeiterfassung.hwr.desktop.entities.Login;
+import com.zeiterfassung.hwr.desktop.component.views.ButtonPane;
 import com.zeiterfassung.hwr.desktop.entities.Project;
+import com.zeiterfassung.hwr.desktop.entities.TimeAction;
 import javafx.application.Platform;
+import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.reactive.function.client.ClientResponse;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.util.UriBuilder;
 import reactor.core.publisher.Mono;
 
-import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Function;
+
+import static com.zeiterfassung.hwr.desktop.controller.ButtonPaneController.ViewStatus.*;
 
 @Controller
 public class ButtonPaneController
 {
 
     private ButtonPane view;
-    private Login model;
-    private final String BASEURL;
-    private Boolean isWork;
-    private Boolean isManual;
+    private WebClientController webClientController;
     private int currentProjectId;
+    private ViewStatus currentViewStatus;
 
-    public ButtonPaneController(@Value("${spring.application.api.baseUrl}") String baseUrl,
-                                Login login,
-                                ButtonPane buttonPane)
+    enum ViewStatus
+    {WORKPERIOD, BREAK, INTERRUPTION}
+
+    public ButtonPaneController(ButtonPane buttonPane, WebClientController webClientController)
     {
         this.view = buttonPane;
-        this.model = login;
-        this.BASEURL = baseUrl;
+        this.webClientController = webClientController;
     }
 
+    //Init Controller
     public void setController()
     {
-        isWork = true;
-        currentProjectId = -1;
+        Optional<TimeAction> lastBookedTime = webClientController.fetchTodaysLastBookedTime();
+        List<Project> projects = webClientController.fetchProjects();
+        Map<String, String> user = webClientController.fetchUserName();
 
-        List<Project> projects = fetchProjects();
-        List<String> projectNames = projects.stream()
+        Optional<String> lastProjectName = getOptionalLastProjectName(lastBookedTime, projects);
+        List<String> projectNames = getProjectNames(projects);
+        Optional<String> alphanumericalFirstProjectName = getAlphanumericalFirstProjectName(projectNames);
+
+        initializeViewStatus(lastBookedTime);
+        initializeGreetingLabel(user);
+        initializeBtnProject(lastProjectName, alphanumericalFirstProjectName, projectNames);
+
+        setBtnEventHandler(projects);
+    }
+
+    @NotNull
+    private Optional<String> getOptionalLastProjectName(Optional<TimeAction> lastBookedTime, List<Project> projects)
+    {
+        return projects.stream()
+                .filter(project ->
+                {
+                    if (lastBookedTime.isPresent())
+                    {
+                        return project.getId() == lastBookedTime.get().getProjectId();
+                    }
+                    return false;
+                })
+                .findFirst()
+                .map(Project::getName);
+    }
+
+    private List<String> getProjectNames(List<Project> projects)
+    {
+        return projects.stream()
                 .map(Project::getName)
                 .sorted()
                 .toList();
+    }
 
-        Map<String, String> user = fetchUserName();
+    @NotNull
+    private Optional<String> getAlphanumericalFirstProjectName(List<String> projectNames)
+    {
+        return projectNames.stream()
+                .min(String::compareTo);
+    }
+
+    private void initializeViewStatus(Optional<TimeAction> lastBookedTime)
+    {
+        if (lastBookedTime.isPresent())
+        {
+            boolean isStart = lastBookedTime.get().isStart();
+            boolean isBreak = lastBookedTime.get().isBreak();
+            currentProjectId = lastBookedTime.get().getProjectId();
+
+            if (isStart && !isBreak)
+            {
+                setBtnStatus(true, false, false);
+                currentViewStatus = WORKPERIOD;
+
+            } else if (!isStart && !isBreak)
+            {
+                setBtnStatus(false, true, true);
+                currentViewStatus = INTERRUPTION;
+            } else if (isStart && isBreak)
+            {
+                setBtnStatus(false, true, true);
+                currentViewStatus = BREAK;
+            } else
+            {
+                throw new IllegalStateException("Last time can't be a finished Break Exception");
+            }
+        } else
+        {
+            currentViewStatus = WORKPERIOD;
+            currentProjectId = -1;
+        }
+    }
+
+    private void initializeGreetingLabel(Map<String, String> user)
+    {
         String greeting = "Hi " + user.get("firstName") + " " + user.get("lastName");
         view.getGreetingLabel().setText(greeting);
+    }
 
+    private void initializeBtnProject(Optional<String> lastProjectName,
+                                      Optional<String> alphanumericalFirstProjectName,
+                                      List<String> projectNames)
+    {
         view.getBtnProject().setItems(FXCollections.observableArrayList(projectNames));
-        view.getBtnProject().setValue(projectNames.stream()
-                .min(String::compareTo)
-                .orElse("Projekt"));
+        view.getBtnProject().setValue(lastProjectName.orElse(alphanumericalFirstProjectName.orElse("Projekt")));
+    }
 
-        view.getBtnProject().setOnAction(projectEventHandler);
+    private void setBtnEventHandler(List<Project> projects)
+    {
         view.getBtnStart().setOnAction(startEventHandler(projects));
         view.getBtnEnd().setOnAction(endEventHandler(projects));
         view.getBtnBreak().setOnAction(breakEventHandler(projects));
         view.getBtnProject().getSelectionModel()
                 .selectedItemProperty()
-                .addListener((change, oldValue, newValue) -> {
-
-                    //Auswahl des Projekts im Dropdownmenü
-                    int selectedProjectId = projects.stream()
-                            .filter(project -> project.getName().equals(newValue))
-                            .findFirst()
-                            .map(Project::getId)
-                            .orElseThrow();
-
-                    //Darf nicht zum aktuellen Projekt wechseln
-                    if(selectedProjectId == currentProjectId){
-                       view.getBtnStart().setText("Arbeit fortsetzen");
-                       if(!isManual && isWork){
-                           view.getBtnStart().setDisable(true);
-                       }
-                    }
-
-
-                });
+                .addListener(projectChangeListener(projects));
     }
-
-
-    @NotNull
-    private EventHandler<ActionEvent> projectEventHandler = btnClick ->
-    {
-        view.getBtnStart().setText("Projekt wechseln");
-        view.getBtnStart().setDisable(false);
-    };
 
     @NotNull
     private EventHandler<ActionEvent> startEventHandler(List<Project> projects)
@@ -105,34 +151,39 @@ public class ButtonPaneController
             view.getErrorLabel().setVisible(false);
             int projectID = getProjectID(projects);
 
-            if (!isWork)
+            if (currentViewStatus == BREAK)
             {
-                postTime(false, true, projectID, clientResponse -> Mono.empty());
+                // postrequest Pausenende
+                webClientController.postTime(false, true, projectID, noResponse, errorResponse);
             }
 
             // Automatisch Arbeitszeitblock bei Projektwechsel beenden
-            if (currentProjectId > 0 && currentProjectId != projectID && isWork && !isManual)
+            if (currentProjectId > 0 && currentProjectId != projectID && currentViewStatus == WORKPERIOD)
             {
-                postTime(false, false, currentProjectId, clientResponse -> Mono.empty());
+                //postrequest Arbeitszeitblockende automatisch bei Projektwechel des alten Projektes
+                webClientController.postTime(false, false, currentProjectId, noResponse, errorResponse);
             }
 
-            postTime(true, false, projectID, clientResponse ->
+            //postrequest Arbeitszeitblockstart
+            webClientController.postTime(true, false, projectID, clientResponse ->
             {
                 currentProjectId = projectID;
 
                 Platform.runLater(() ->
                 {
-                    isWork = true;
-                    isManual = false;
+                    currentViewStatus = WORKPERIOD;
                     view.getBtnStart().setText("Arbeit fortsetzen");
                     setBtnStatus(true, false, false);
+                    if (view.getProjectLabel().isVisible())
+                    {
+                        view.getProjectLabel().setVisible(false);
+                    }
                 });
 
                 return Mono.empty();
-            });
+            }, errorResponse);
         };
     }
-
 
     @NotNull
     private EventHandler<ActionEvent> endEventHandler(List<Project> projects)
@@ -143,15 +194,16 @@ public class ButtonPaneController
 
             int projectID = getProjectID(projects);
 
-            postTime(false, false, projectID, clientResponse ->
+            //postrequest Arbeitszeitblockende durch User manuell
+            webClientController.postTime(false, false, projectID, clientResponse ->
             {
                 Platform.runLater(() ->
                 {
-                    isManual = true;
+                    currentViewStatus = INTERRUPTION;
                     setBtnStatus(false, true, true);
                 });
                 return Mono.empty();
-            });
+            }, errorResponse);
         };
     }
 
@@ -163,20 +215,58 @@ public class ButtonPaneController
 
             int projectID = getProjectID(projects);
 
-            //Beendet Arbeitszeitblock
-            postTime(false, false, projectID, clientResponse -> Mono.empty());
+            //postrequest Arbeitszeitblockende automatisch beim Starten der Pause
+            webClientController.postTime(false, false, projectID, noResponse, errorResponse);
 
-            //Started Pause
-            postTime(true, true, projectID, clientResponse ->
+            //postrequest Pausenbeginn
+            webClientController.postTime(true, true, projectID, clientResponse ->
             {
                 Platform.runLater(() ->
                 {
-                    isWork = false;
+                    currentViewStatus = BREAK;
                     setBtnStatus(false, true, true);
                 });
 
                 return Mono.empty();
-            });
+            }, errorResponse);
+        };
+    }
+
+    @NotNull
+    private ChangeListener<String> projectChangeListener(List<Project> projects)
+    {
+        return (change, oldValue, newValue) ->
+        {
+            //Auswahl des Projekts im Dropdownmenü
+            int newProjectId = projects.stream()
+                    .filter(project -> project.getName().equals(newValue))
+                    .findFirst()
+                    .map(Project::getId)
+                    .orElseThrow();
+
+            //managed BtnStart bei Projektwechsel + Info Label
+            // (inkl. Enabled/Disabled, Label: "Arbeit fortsetzen"/"Projekt wechseln")
+            if (newProjectId == currentProjectId)
+            {
+                view.getBtnStart().setText("Arbeit fortsetzen");
+                view.getBtnStart().setDisable(false);
+                view.getProjectLabel().setVisible(false);
+
+                if (currentViewStatus == WORKPERIOD)
+                {
+                    view.getBtnStart().setDisable(true);
+                }
+
+            } else
+            {
+                if (currentProjectId != -1)
+                {
+                    view.getBtnStart().setDisable(false);
+                    view.getBtnStart().setText("Projekt wechseln");
+
+                    view.getProjectLabel().setVisible(true);
+                }
+            }
         };
     }
 
@@ -185,39 +275,6 @@ public class ButtonPaneController
         view.getBtnStart().setDisable(disabledBtnStart);
         view.getBtnEnd().setDisable(disabledBtnEnd);
         view.getBtnBreak().setDisable(disabledBtnBreak);
-    }
-
-    private List<Project> fetchProjects()
-    {
-        return WebClient.create(BASEURL + "/human")
-                .get()
-                .uri(buildUri("/getAllProjects"))
-                .retrieve()
-                .bodyToFlux(Project.class)
-                .collectList()
-                .block();
-    }
-
-
-    private Map<String, String> fetchUserName()
-    {
-        return WebClient.create(BASEURL + "/human")
-                .get()
-                .uri(buildUri("/name"))
-                .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<Map<String, String>>()
-                {
-                })
-                .block();
-    }
-
-    @NotNull
-    private Function<UriBuilder, URI> buildUri(String path)
-    {
-        return uriBuilder -> uriBuilder.path(path)
-                .queryParam("email", model.getEmail())
-                .queryParam("password", model.getPassword())
-                .build();
     }
 
     private int getProjectID(List<Project> projects)
@@ -230,35 +287,11 @@ public class ButtonPaneController
                 .orElseThrow();
     }
 
-    private void postTime(Boolean isStart, Boolean isBreak, int projectID,
-                          Function<ClientResponse, Mono<? extends Throwable>> acceptedResponse)
-    {
-        WebClient.create(BASEURL + "/book")
-                .post()
-                .uri(buildComplexUri(isStart, isBreak, projectID))
-                .retrieve()
-                .onStatus(httpStatus -> httpStatus.equals(HttpStatus.ACCEPTED), acceptedResponse)
-                .onStatus(HttpStatus::isError, errorResponse)
-                .toBodilessEntity()
-                .block();
-
-    }
+    @NotNull
+    private final Function<ClientResponse, Mono<? extends Throwable>> noResponse = clientResponse -> Mono.empty();
 
     @NotNull
-    private Function<UriBuilder, URI> buildComplexUri(Boolean isStart, Boolean isBreak, int projectID)
-    {
-        return uriBuilder -> uriBuilder.path("/time")
-                .queryParam("email", model.getEmail())
-                .queryParam("password", model.getPassword())
-                .queryParam("isStart", isStart)
-                .queryParam("pause", isBreak)
-                .queryParam("note", "")
-                .queryParam("projectId", projectID)
-                .build();
-    }
-
-    @NotNull
-    private Function<ClientResponse, Mono<? extends Throwable>> errorResponse = clientResponse ->
+    private final Function<ClientResponse, Mono<? extends Throwable>> errorResponse = clientResponse ->
     {
         Platform.runLater(() ->
         {
@@ -268,6 +301,5 @@ public class ButtonPaneController
         });
         return Mono.empty();
     };
-
 
 }

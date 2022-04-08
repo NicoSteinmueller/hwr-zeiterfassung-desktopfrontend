@@ -1,9 +1,12 @@
-package com.zeiterfassung.hwr.desktop;
+package com.zeiterfassung.hwr.desktop.javafxEntrypoint;
 
+import com.zeiterfassung.hwr.desktop.DesktopApplication;
+import com.zeiterfassung.hwr.desktop.entities.StageEntity;
 import javafx.application.Application;
 import javafx.application.HostServices;
 import javafx.application.Platform;
 import javafx.stage.Stage;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ApplicationEvent;
@@ -15,6 +18,8 @@ public class JavaFxApplication extends Application
 {
 
     private ConfigurableApplicationContext context;
+    @Autowired
+    private StageEntity stageEntity;
 
 
     @Override
@@ -37,6 +42,7 @@ public class JavaFxApplication extends Application
     @Override
     public void start(Stage primaryStage)
     {
+        stageEntity.setPrimaryStage(primaryStage);
         this.context.publishEvent(new StageReadyEvent(primaryStage));
     }
 
