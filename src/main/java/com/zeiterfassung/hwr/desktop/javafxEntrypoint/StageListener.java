@@ -1,7 +1,8 @@
-package com.zeiterfassung.hwr.desktop;
+package com.zeiterfassung.hwr.desktop.javafxEntrypoint;
 
 
-import com.zeiterfassung.hwr.desktop.component.LoginPane;
+
+import com.zeiterfassung.hwr.desktop.component.views.LoginPane;
 import com.zeiterfassung.hwr.desktop.controller.LoginController;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
@@ -14,7 +15,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class StageListener implements ApplicationListener<StageReadyEvent>
 {
-
     private final String TITLE;
     private final ClassPathResource CSS;
     private LoginPane pane;
@@ -35,7 +35,7 @@ public class StageListener implements ApplicationListener<StageReadyEvent>
     public void onApplicationEvent(StageReadyEvent event)
     {
         Stage stage = event.getStage();
-        Scene scene = new Scene(pane.getParent());
+        Scene scene = new Scene(pane.asParent());
         controller.setController();
         scene.getStylesheets().add(this.CSS.getPath());
         stage.setScene(scene);

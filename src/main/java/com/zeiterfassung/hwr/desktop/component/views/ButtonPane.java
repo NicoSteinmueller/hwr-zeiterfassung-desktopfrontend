@@ -1,11 +1,6 @@
-package com.zeiterfassung.hwr.desktop.component;
+package com.zeiterfassung.hwr.desktop.component.views;
 
-import com.zeiterfassung.hwr.desktop.entities.Login;
-import com.zeiterfassung.hwr.desktop.entities.Project;
-import javafx.application.Platform;
-import javafx.collections.FXCollections;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
+import com.zeiterfassung.hwr.desktop.interfaces.IUILayout;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.ChoiceBox;
@@ -13,20 +8,9 @@ import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import lombok.Getter;
-import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.ClientResponse;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.core.publisher.Mono;
 
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
 
 @Component
 @Qualifier("nextPane")
@@ -35,15 +19,17 @@ public class ButtonPane implements IUILayout
 {
     private BorderPane borderpane;
     private Label greetingLabel;
-    private HBox hBox;
+    private HBox hBoxBtn;
     private ChoiceBox<String> btnProject;
     private Button btnStart;
     private Button btnEnd;
     private Button btnBreak;
+    private HBox hBoxLabel;
+    private Label projectLabel;
     private Label errorLabel;
 
     @Override
-    public Parent getParent()
+    public Parent asParent()
     {
         greetingLabel = new Label();
         btnProject = new ChoiceBox<>();
@@ -52,9 +38,12 @@ public class ButtonPane implements IUILayout
         btnEnd.setDisable(true);
         btnBreak = new Button("Pause");
         btnBreak.setDisable(true);
-        hBox = new HBox();
-        hBox.getChildren().addAll(btnProject, btnStart, btnEnd, btnBreak);
+        hBoxBtn = new HBox(btnProject, btnStart, btnEnd, btnBreak);
+
+        projectLabel = new Label("Achtung: Projektauswahl mit 'Projekt wechseln' bestätigen!");
+        projectLabel.setVisible(false);
         errorLabel = new Label();
+        hBoxLabel = new HBox(projectLabel, errorLabel);
 
         btnProject.getStyleClass().add("redAlternativeButton");
         btnStart.getStyleClass().add("redButton");
@@ -63,8 +52,8 @@ public class ButtonPane implements IUILayout
 
         borderpane = new BorderPane();
         borderpane.setTop(greetingLabel);
-        borderpane.setCenter(hBox);
-        borderpane.setBottom(errorLabel);
+        borderpane.setCenter(hBoxBtn);
+        borderpane.setBottom(hBoxLabel);
 
         return borderpane;
     }

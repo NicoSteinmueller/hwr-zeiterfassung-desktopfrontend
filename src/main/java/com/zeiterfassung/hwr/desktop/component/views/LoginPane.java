@@ -1,5 +1,6 @@
-package com.zeiterfassung.hwr.desktop.component;
+package com.zeiterfassung.hwr.desktop.component.views;
 
+import com.zeiterfassung.hwr.desktop.interfaces.IUILayout;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -36,7 +37,7 @@ public class LoginPane implements IUILayout
     }
 
     @Override
-    public Parent getParent()
+    public Parent asParent()
     {
         logo = new Image(imageUrl, 150, 150, true, false);
         textFieldEmail = new TextField();

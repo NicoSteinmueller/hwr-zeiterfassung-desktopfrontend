@@ -1,49 +1,46 @@
 package com.zeiterfassung.hwr.desktop.controller;
 
 import com.google.common.hash.Hashing;
-import com.zeiterfassung.hwr.desktop.component.ButtonPane;
-import com.zeiterfassung.hwr.desktop.component.LoginPane;
+import com.zeiterfassung.hwr.desktop.component.views.ButtonPane;
+import com.zeiterfassung.hwr.desktop.component.views.LoginPane;
 import com.zeiterfassung.hwr.desktop.entities.Login;
+import com.zeiterfassung.hwr.desktop.entities.StageEntity;
+import com.zeiterfassung.hwr.desktop.interfaces.CustomFunctionalInterface;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.stage.Stage;
-import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.util.UriBuilder;
+import org.springframework.web.reactive.function.client.ClientResponse;
 import reactor.core.publisher.Mono;
 
-import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Function;
-import java.util.function.Predicate;
 
 @Controller
 public class LoginController
 {
-    private final String BASEURL;
     private Login model;
     private LoginPane loginPane;
     private ButtonPane nextPane;
     private ButtonPaneController nextPaneController;
+    private WebClientController webClientController;
+    private StageEntity stageEntity;
 
-    public LoginController(@Value("${spring.application.api.baseUrl}") String baseUrl,
-                           Login login,
+    public LoginController(Login login,
                            LoginPane loginPane,
                            ButtonPane buttonPane,
-                           ButtonPaneController buttonPaneController)
+                           ButtonPaneController buttonPaneController,
+                           WebClientController webClientController,
+                           StageEntity stageEntity)
     {
-        this.BASEURL = baseUrl;
         this.model = login;
         this.loginPane = loginPane;
         this.nextPane = buttonPane;
         this.nextPaneController = buttonPaneController;
+        this.webClientController = webClientController;
+        this.stageEntity = stageEntity;
     }
 
     public void setController()
@@ -51,72 +48,52 @@ public class LoginController
         loginPane.getBtnSubmit().setOnAction(submitEventHandler);
     }
 
-    private EventHandler<ActionEvent> submitEventHandler = btnClick ->
+    @NotNull
+    private final Runnable changeScene = () ->
     {
-        setLogin();
-        validateLoginAndProceed(btnClick);
+        Scene nextScene = new Scene(nextPane.asParent());
+        nextPaneController.setController();
+        nextScene.getStylesheets().add("static/styling.css");
+        stageEntity.getPrimaryStage().setScene(nextScene);
+
     };
 
-    private void setLogin()
+    @NotNull
+    private final Function<ClientResponse, Mono<? extends Throwable>> acceptedResponse = clientResponse ->
+    {
+        Platform.runLater(changeScene);
+        return Mono.empty();
+    };
+
+    @NotNull
+    private final Runnable displayError = () -> loginPane.getErrorLabel().setVisible(true);
+
+    @NotNull
+    private final Function<ClientResponse, Mono<? extends Throwable>> errorResponse = response ->
+    {
+        Platform.runLater(displayError);
+        return Mono.empty();
+    };
+
+    @NotNull
+    private final Function<String, String> hash = text ->
+            Hashing.sha256()
+                    .hashString(text, StandardCharsets.UTF_8)
+                    .toString();
+
+    @NotNull
+    private final CustomFunctionalInterface setLogin = () ->
     {
         model.setEmail(loginPane.getTextFieldEmail().getText());
-        model.setPassword(hash(loginPane.getPasswordField().getText()));
-    }
-
-    private void validateLoginAndProceed(ActionEvent btnClick)
-    {
-        WebClient.create(BASEURL + "/login")
-                .post()
-                .uri(buildUri)
-                .bodyValue(model)
-                .retrieve()
-                .onStatus(isAccepted, response ->
-                {
-                    Platform.runLater(changeScene(btnClick));
-                    return Mono.empty();
-                })
-                .onStatus(HttpStatus::isError, response ->
-                {
-                    Platform.runLater(displayError);
-                    return Mono.empty();
-                })
-                .bodyToMono(HttpStatus.class)
-                .block();
-    }
+        String password = loginPane.getPasswordField().getText();
+        String hashedPassword = hash.apply(password);
+        model.setPassword(hashedPassword);
+    };
 
     @NotNull
-    private Function<UriBuilder, URI> buildUri = uriBuilder -> uriBuilder.path("/basicLogin")
-            .queryParam("email", model.getEmail())
-            .queryParam("password", model.getPassword())
-            .build();
-
-
-    private String hash(String text)
+    private final EventHandler<ActionEvent> submitEventHandler = btnClick ->
     {
-        return Hashing.sha256()
-                .hashString(text, StandardCharsets.UTF_8)
-                .toString();
-    }
-
-    @NotNull
-    private Runnable displayError = () -> loginPane.getErrorLabel().setVisible(true);
-
-    @NotNull
-    private Predicate<HttpStatus> isAccepted = httpStatus -> httpStatus.equals(HttpStatus.ACCEPTED);
-
-    @Contract(pure = true)
-    private @NotNull Runnable changeScene(ActionEvent event)
-    {
-        return () ->
-        {
-            Button btn = (Button) event.getSource();
-            Scene scene = btn.getScene();
-            Stage stage = (Stage) scene.getWindow();
-            Scene nextScene = new Scene(nextPane.getParent());
-            nextPaneController.setController();
-            nextScene.getStylesheets().add("static/styling.css");
-            stage.setScene(nextScene);
-
-        };
-    }
+        setLogin.execute();
+        webClientController.verifyLogin(acceptedResponse, errorResponse);
+    };
 }
