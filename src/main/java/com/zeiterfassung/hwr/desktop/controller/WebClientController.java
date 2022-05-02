@@ -67,9 +67,9 @@ public class WebClientController
 
     protected Optional<TimeAction> fetchTodaysLastBookedTime()
     {
-        return WebClient.create(BASEURL + "/book")
+        return WebClient.create(BASEURL + "/time")
                 .get()
-                .uri(buildUri("/lastTimeStatus"))
+                .uri(buildUri("/lastStatus"))
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<Optional<TimeAction>>()
                 {
