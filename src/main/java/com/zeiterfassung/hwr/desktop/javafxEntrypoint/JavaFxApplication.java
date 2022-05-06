@@ -14,6 +14,9 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.support.GenericApplicationContext;
 
 
+/**
+ * The Java fx application.
+ */
 public class JavaFxApplication extends Application
 {
 
@@ -21,7 +24,9 @@ public class JavaFxApplication extends Application
     @Autowired
     private StageEntity stageEntity;
 
-
+    /**
+     * override the init methode
+     */
     @Override
     public void init()
     {
@@ -39,6 +44,11 @@ public class JavaFxApplication extends Application
                 .run(getParameters().getRaw().toArray(new String[0]));
     }
 
+    /**
+     * start the application with the primary Stage
+     *
+     * @param primaryStage  the primary Stage
+     */
     @Override
     public void start(Stage primaryStage)
     {
@@ -46,6 +56,9 @@ public class JavaFxApplication extends Application
         this.context.publishEvent(new StageReadyEvent(primaryStage));
     }
 
+    /**
+     * methode for stop the application
+     */
     @Override
     public void stop()
     {
@@ -53,17 +66,4 @@ public class JavaFxApplication extends Application
         Platform.exit();
     }
 
-}
-
-class StageReadyEvent extends ApplicationEvent
-{
-    public Stage getStage()
-    {
-        return (Stage) getSource();
-    }
-
-    public StageReadyEvent(Stage source)
-    {
-        super(source);
-    }
 }

@@ -8,6 +8,9 @@ import org.testfx.framework.junit5.ApplicationExtension;
 import org.testfx.framework.junit5.Start;
 
 
+/**
+ * The type Desktop application tests.
+ */
 @SpringBootTest
 //@ExtendWith(ApplicationExtension.class)
 class DesktopApplicationTests
@@ -19,6 +22,9 @@ class DesktopApplicationTests
 //    {
 //    }
 
+    /**
+     * Context loads.
+     */
     @Test
     void contextLoads()
     {

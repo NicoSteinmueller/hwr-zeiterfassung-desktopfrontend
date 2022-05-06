@@ -18,6 +18,9 @@ import reactor.core.publisher.Mono;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Function;
 
+/**
+ * The Login controller.
+ */
 @Controller
 public class LoginController
 {
@@ -28,6 +31,16 @@ public class LoginController
     private WebClientController webClientController;
     private StageEntity stageEntity;
 
+    /**
+     * Instantiates a new Login controller.
+     *
+     * @param login                the login
+     * @param loginPane            the login pane
+     * @param buttonPane           the button pane
+     * @param buttonPaneController the button pane controller
+     * @param webClientController  the web client controller
+     * @param stageEntity          the stage entity
+     */
     public LoginController(Login login,
                            LoginPane loginPane,
                            ButtonPane buttonPane,
@@ -43,11 +56,17 @@ public class LoginController
         this.stageEntity = stageEntity;
     }
 
+    /**
+     * Sets controller.
+     */
     public void setController()
     {
         loginPane.getBtnSubmit().setOnAction(submitEventHandler);
     }
 
+    /**
+     * change the Scene
+     */
     @NotNull
     private final Runnable changeScene = () ->
     {
@@ -55,9 +74,11 @@ public class LoginController
         nextPaneController.setController();
         nextScene.getStylesheets().add("static/styling.css");
         stageEntity.getPrimaryStage().setScene(nextScene);
-
     };
 
+    /**
+     * accept Response Function
+     */
     @NotNull
     private final Function<ClientResponse, Mono<? extends Throwable>> acceptedResponse = clientResponse ->
     {
@@ -65,9 +86,15 @@ public class LoginController
         return Mono.empty();
     };
 
+    /**
+     * display Error
+     */
     @NotNull
     private final Runnable displayError = () -> loginPane.getErrorLabel().setVisible(true);
 
+    /**
+     * error Response
+     */
     @NotNull
     private final Function<ClientResponse, Mono<? extends Throwable>> errorResponse = response ->
     {
@@ -75,12 +102,18 @@ public class LoginController
         return Mono.empty();
     };
 
+    /**
+     * Hash SHA 256 (no Salt or Pepper)
+     */
     @NotNull
     private final Function<String, String> hash = text ->
             Hashing.sha256()
                     .hashString(text, StandardCharsets.UTF_8)
                     .toString();
 
+    /**
+     * set email, (hashed)password Login-model
+     */
     @NotNull
     private final CustomFunctionalInterface setLogin = () ->
     {
@@ -90,6 +123,9 @@ public class LoginController
         model.setPassword(hashedPassword);
     };
 
+    /**
+     * Submitbtn Event-handler
+     */
     @NotNull
     private final EventHandler<ActionEvent> submitEventHandler = btnClick ->
     {

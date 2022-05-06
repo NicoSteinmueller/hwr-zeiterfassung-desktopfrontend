@@ -20,25 +20,50 @@ import java.util.function.Function;
 
 import static com.zeiterfassung.hwr.desktop.controller.ButtonPaneController.ViewStatus.*;
 
+/**
+ * The Button pane controller.
+ */
 @Controller
 public class ButtonPaneController
 {
-
     private ButtonPane view;
     private WebClientController webClientController;
     private int currentProjectId;
     private ViewStatus currentViewStatus;
 
+    /**
+     * The enum View status.
+     */
     enum ViewStatus
-    {WORKPERIOD, BREAK, INTERRUPTION}
+    {
+        /**
+         * Workperiod view status.
+         */
+        WORKPERIOD,
+        /**
+         * Break view status.
+         */
+        BREAK,
+        /**
+         * Interruption view status.
+         */
+        INTERRUPTION}
 
+    /**
+     * Instantiates a new Button pane controller.
+     *
+     * @param buttonPane          the button pane
+     * @param webClientController the web client controller
+     */
     public ButtonPaneController(ButtonPane buttonPane, WebClientController webClientController)
     {
         this.view = buttonPane;
         this.webClientController = webClientController;
     }
 
-    //Init Controller
+    /**
+     * init set controller.
+     */
     public void setController()
     {
         Optional<TimeAction> lastBookedTime = webClientController.fetchTodaysLastBookedTime();
@@ -56,6 +81,13 @@ public class ButtonPaneController
         setBtnEventHandler(projects);
     }
 
+    /**
+     * get the optional last Project name
+     *
+     * @param lastBookedTime    the last booked time
+     * @param projects  the projects
+     * @return Optional project name
+     */
     @NotNull
     private Optional<String> getOptionalLastProjectName(Optional<TimeAction> lastBookedTime, List<Project> projects)
     {
@@ -72,6 +104,12 @@ public class ButtonPaneController
                 .map(Project::getName);
     }
 
+    /**
+     * get the project Names from a list of projects OR map list of projects to the project names
+     *
+     * @param projects  the list of project
+     * @return list of project names
+     */
     private List<String> getProjectNames(List<Project> projects)
     {
         return projects.stream()
@@ -80,6 +118,12 @@ public class ButtonPaneController
                 .toList();
     }
 
+    /**
+     * get the alphanumerical first Project name of a list of project names
+     *
+     * @param projectNames  list of project names
+     * @return Optional project Name
+     */
     @NotNull
     private Optional<String> getAlphanumericalFirstProjectName(List<String> projectNames)
     {
@@ -87,6 +131,11 @@ public class ButtonPaneController
                 .min(String::compareTo);
     }
 
+    /**
+     * initialize the view status
+     *
+     * @param lastBookedTime    the last booked Time
+     */
     private void initializeViewStatus(Optional<TimeAction> lastBookedTime)
     {
         if (lastBookedTime.isPresent())
@@ -119,12 +168,24 @@ public class ButtonPaneController
         }
     }
 
+    /**
+     * initialize greeting label
+     *
+     * @param user user as map with first and last name
+     */
     private void initializeGreetingLabel(Map<String, String> user)
     {
         String greeting = "Hi " + user.get("firstName") + " " + user.get("lastName");
         view.getGreetingLabel().setText(greeting);
     }
 
+    /**
+     * initialize btn project
+     *
+     * @param lastProjectName   the last project name
+     * @param alphanumericalFirstProjectName    the alphanumerical First Project Name
+     * @param projectNames  the project Names
+     */
     private void initializeBtnProject(Optional<String> lastProjectName,
                                       Optional<String> alphanumericalFirstProjectName,
                                       List<String> projectNames)
@@ -133,6 +194,11 @@ public class ButtonPaneController
         view.getBtnProject().setValue(lastProjectName.orElse(alphanumericalFirstProjectName.orElse("Projekt")));
     }
 
+    /**
+     * set Event handlers for all Buttons (Start, End, Break, Projects)
+     *
+     * @param projects  the list of projects
+     */
     private void setBtnEventHandler(List<Project> projects)
     {
         view.getBtnStart().setOnAction(startEventHandler(projects));
@@ -143,6 +209,12 @@ public class ButtonPaneController
                 .addListener(projectChangeListener(projects));
     }
 
+    /**
+     * Startbtn Event-handler
+     *
+     * @param projects list of projects
+     * @return Event Handler of Action Event
+     */
     @NotNull
     private EventHandler<ActionEvent> startEventHandler(List<Project> projects)
     {
@@ -185,6 +257,12 @@ public class ButtonPaneController
         };
     }
 
+    /**
+     * Endbtn Event-handler
+     *
+     * @param projects list of projects
+     * @return Event Handler of Action Event
+     */
     @NotNull
     private EventHandler<ActionEvent> endEventHandler(List<Project> projects)
     {
@@ -207,6 +285,12 @@ public class ButtonPaneController
         };
     }
 
+    /**
+     * Breakbtn Event-handler
+     *
+     * @param projects list of projects
+     * @return Event Handler of Action Event
+     */
     private EventHandler<ActionEvent> breakEventHandler(List<Project> projects)
     {
         return btnClick ->
@@ -232,6 +316,12 @@ public class ButtonPaneController
         };
     }
 
+    /**
+     * Projectbtn Change-listener (Observer)
+     *
+     * @param projects list of projects
+     * @return Event Handler of Action Event
+     */
     @NotNull
     private ChangeListener<String> projectChangeListener(List<Project> projects)
     {
@@ -270,6 +360,13 @@ public class ButtonPaneController
         };
     }
 
+    /**
+     * if the XYZ Button shall be disabled
+     *
+     * @param disabledBtnStart  if the Start Button is disabled
+     * @param disabledBtnEnd    if the End Button is disabled
+     * @param disabledBtnBreak  if the Break Button is disabled
+     */
     private void setBtnStatus(Boolean disabledBtnStart, Boolean disabledBtnEnd, Boolean disabledBtnBreak)
     {
         view.getBtnStart().setDisable(disabledBtnStart);
@@ -277,6 +374,12 @@ public class ButtonPaneController
         view.getBtnBreak().setDisable(disabledBtnBreak);
     }
 
+    /**
+     * get ProjectID from selected Project (Projectbtn)
+     *
+     * @param projects list of projects
+     * @return Project Id
+     */
     private int getProjectID(List<Project> projects)
     {
         String selectedProjectName = view.getBtnProject().getValue();
