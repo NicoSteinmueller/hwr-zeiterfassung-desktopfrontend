@@ -1,7 +1,5 @@
 package com.zeiterfassung.hwr.desktop.javafxEntrypoint;
 
-
-
 import com.zeiterfassung.hwr.desktop.component.views.LoginPane;
 import com.zeiterfassung.hwr.desktop.controller.LoginController;
 import javafx.scene.Scene;
@@ -11,7 +9,9 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
-
+/**
+ * The type Stage listener.
+ */
 @Component
 public class StageListener implements ApplicationListener<StageReadyEvent>
 {
@@ -21,6 +21,14 @@ public class StageListener implements ApplicationListener<StageReadyEvent>
     private LoginController controller;
 
 
+    /**
+     * Instantiates a new Stage listener.
+     *
+     * @param applicationTitle  the application title
+     * @param classPathResource the class path resource
+     * @param loginPane         the login pane
+     * @param loginController   the login controller
+     */
     public StageListener(@Value("${spring.application.window.title}") String applicationTitle,
                          @Value("static/styling.css") ClassPathResource classPathResource,
                          LoginPane loginPane, LoginController loginController)
@@ -31,6 +39,11 @@ public class StageListener implements ApplicationListener<StageReadyEvent>
         this.controller = loginController;
     }
 
+    /**
+     * Override the onApplicationEvent methode
+     *
+     * @param event the Stage Ready Event
+     */
     @Override
     public void onApplicationEvent(StageReadyEvent event)
     {

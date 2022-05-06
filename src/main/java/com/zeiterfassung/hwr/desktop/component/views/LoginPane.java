@@ -16,7 +16,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 
-
+/**
+ * The Login pane.
+ */
 @Component
 @Qualifier("Login")
 @Getter
@@ -31,11 +33,20 @@ public class LoginPane implements IUILayout
     private Button btnSubmit;
     private Label errorLabel;
 
+    /**
+     * Instantiates a new Login pane.
+     *
+     * @param imageUrl the image url
+     */
     public LoginPane(@Value("static/logo.png") String imageUrl)
     {
         this.imageUrl = imageUrl;
     }
 
+    /**
+     * override for the as parent Methode
+     * @return Parent
+     */
     @Override
     public Parent asParent()
     {
