@@ -12,6 +12,9 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 
+/**
+ * The Button pane.
+ */
 @Component
 @Qualifier("nextPane")
 @Getter
@@ -28,6 +31,10 @@ public class ButtonPane implements IUILayout
     private Label projectLabel;
     private Label errorLabel;
 
+    /**
+     * override for the as Parent methode
+     * @return Parent
+     */
     @Override
     public Parent asParent()
     {
@@ -57,8 +64,5 @@ public class ButtonPane implements IUILayout
 
         return borderpane;
     }
-
-
-
 
 }
